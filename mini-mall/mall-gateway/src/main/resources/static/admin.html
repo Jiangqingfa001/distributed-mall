@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理后台 - 微商订单管理系统</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif; background: #f0f2f5; color: #333; }
+        .header { background: linear-gradient(135deg, #1f2937 0%, #374151 100%); color: #fff; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 24px; }
+        .header-right { display: flex; align-items: center; gap: 10px; }
+        .current-user { font-size: 14px; padding: 6px 14px; border-radius: 20px; background: rgba(255,255,255,0.15); color: #fff; }
+        .header-btn { background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.5); padding: 6px 16px; border-radius: 20px; font-size: 14px; cursor: pointer; }
+        .header-btn:hover { background: rgba(255,255,255,0.3); }
+        .container { max-width: 1200px; margin: 24px auto; padding: 0 20px; }
+        .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 24px; margin-bottom: 20px; }
+        .card h3 { font-size: 18px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #1f2937; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        table th { background: #fafafa; padding: 12px; text-align: left; font-weight: 600; border-bottom: 2px solid #e8e8e8; }
+        table td { padding: 12px; border-bottom: 1px solid #f0f0f0; }
+        .tag { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+        .tag-success { background: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
+        .tag-warning { background: #fffbe6; color: #faad14; border: 1px solid #ffe58f; }
+        .tag-muted { background: #f5f5f5; color: #999; border: 1px solid #d9d9d9; }
+        .btn { padding: 5px 12px; font-size: 12px; border-radius: 6px; cursor: pointer; border: none; }
+        .btn-ship { background: #52c41a; color: #fff; }
+        .btn-off { background: #ff4d4f; color: #fff; }
+        .btn-on { background: #52c41a; color: #fff; }
+        .btn-chat { background: #667eea; color: #fff; }
+        .btn-outline { background: #fff; color: #667eea; border: 1px solid #667eea; }
+        .loading { text-align: center; padding: 20px; color: #999; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.45); z-index: 100; align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        .modal-box { background: #fff; border-radius: 12px; width: 520px; max-width: 92vw; max-height: 80vh; display: flex; flex-direction: column; }
+        .modal-head { padding: 16px 20px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+        .modal-head h3 { font-size: 16px; }
+        .modal-head .close { cursor: pointer; font-size: 22px; color: #999; }
+        .modal-body { padding: 20px; }
+        .chat-list { height: 320px; overflow-y: auto; margin-bottom: 12px; }
+        .chat-msg { margin-bottom: 10px; display: flex; }
+        .chat-msg.mine { justify-content: flex-end; }
+        .chat-msg .bubble { max-width: 70%; padding: 8px 12px; border-radius: 10px; font-size: 14px; background: #f0f0f0; }
+        .chat-msg.mine .bubble { background: #1f2937; color: #fff; }
+        .chat-msg .time { font-size: 11px; color: #999; margin-top: 2px; }
+        .chat-input-row { display: flex; gap: 8px; }
+        .chat-input-row input { flex: 1; padding: 10px 12px; border: 1px solid #d9d9d9; border-radius: 8px; }
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 13px; color: #666; margin-bottom: 6px; font-weight: 500; }
+        .form-group input { width: 100%; padding: 10px 12px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px; }
+        .form-group input:focus { outline: none; border-color: #667eea; }
+        .btn-primary { background: #667eea; color: #fff; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>管理后台</h1>
+        <div class="header-right">
+            <span class="current-user" id="currentUser">管理员</span>
+            <button class="header-btn" onclick="logout()">退出登录</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h3>商品管理 <button class="btn btn-outline" onclick="loadProducts()" style="margin-left:12px;">刷新</button> <button class="btn btn-primary" onclick="openAddProduct()" style="margin-left:12px;">新增商品</button></h3>
+            <div id="productTable"><div class="loading">加载中...</div></div>
+        </div>
+
+        <div class="card">
+            <h3>订单管理 <button class="btn btn-outline" onclick="loadOrders()" style="margin-left:12px;">刷新</button></h3>
+            <div id="orderTable"><div class="loading">加载中...</div></div>
+        </div>
+    </div>
+
+    <!-- 私聊弹窗 -->
+    <div class="modal" id="chatModal">
+        <div class="modal-box">
+            <div class="modal-head">
+                <h3 id="chatTitle">与用户对话</h3>
+                <span class="close" onclick="closeChat()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="chat-list" id="chatList"><div class="loading">加载中...</div></div>
+                <div class="chat-input-row">
+                    <input type="text" id="chatInput" placeholder="输入消息...">
+                    <button class="btn btn-chat" onclick="sendMessage()">发送</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 商品编辑弹窗 -->
+    <div class="modal" id="productModal">
+        <div class="modal-box">
+            <div class="modal-head">
+                <h3 id="editTitle">编辑商品</h3>
+                <span class="close" onclick="closeProductModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editProductId">
+                <div class="form-group">
+                    <label>商品名称</label>
+                    <input type="text" id="editName" placeholder="请输入商品名称">
+                </div>
+                <div class="form-group">
+                    <label>价格（元）</label>
+                    <input type="number" id="editPrice" placeholder="请输入价格" min="0" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>库存</label>
+                    <input type="number" id="editStock" placeholder="请输入库存" min="0" step="1">
+                </div>
+                <button class="btn btn-primary" style="width:100%;" onclick="saveProduct()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var chatTargetUserId = null;
+        var chatTimer = null;
+
+        function getCurrentUser() {
+            var raw = localStorage.getItem('currentUser');
+            if (raw) {
+                try { return JSON.parse(raw); } catch (e) { return null; }
+            }
+            return null;
+        }
+
+        function api(path, options) {
+            return fetch(path, options).then(function(res) {
+                return res.json();
+            }).catch(function(e) {
+                return { code: 1, message: '请求失败' };
+            });
+        }
+
+        function initAdmin() {
+            var u = getCurrentUser();
+            if (!u || u.role !== 'ADMIN') {
+                window.location.href = '/login.html';
+                return;
+            }
+            document.getElementById('currentUser').textContent = '管理员: ' + (u.username || 'root');
+        }
+
+        var productsCache = [];
+
+        function loadProducts() {
+            var el = document.getElementById('productTable');
+            api('/api/product/list').then(function(data) {
+                if (data.code) { el.innerHTML = '<div class="loading">加载失败</div>'; return; }
+                productsCache = data;
+                var html = '<table><tr><th>ID</th><th>名称</th><th>价格</th><th>库存</th><th>状态</th><th>操作</th></tr>';
+                for (var i = 0; i < data.length; i++) {
+                    var p = data[i];
+                    var off = p.status === 'OFF_SALE';
+                    var statusHtml = off
+                        ? '<span class="tag tag-muted">已下架</span>'
+                        : '<span class="tag tag-success">在售</span>';
+                    var btn = off
+                        ? '<button class="btn btn-on" onclick="setProductStatus(' + p.id + ', \'ON_SALE\')">上架</button>'
+                        : '<button class="btn btn-off" onclick="setProductStatus(' + p.id + ', \'OFF_SALE\')">下架</button>';
+                    var editBtn = '<button class="btn btn-outline" onclick="openEditProduct(' + p.id + ')">编辑</button>';
+                    html += '<tr><td>' + p.id + '</td><td>' + p.name + '</td><td>¥' + p.price + '</td><td>' + p.stock + '</td><td>' + statusHtml + '</td><td>' + btn + ' ' + editBtn + '</td></tr>';
+                }
+                html += '</table>';
+                el.innerHTML = html;
+            });
+        }
+
+        function setProductStatus(id, status) {
+            var params = new URLSearchParams({ productId: id, status: status });
+            fetch('/api/product/status', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params.toString() })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.code === 0) { loadProducts(); } else { alert(data.message || '操作失败'); }
+            });
+        }
+
+        function loadOrders() {
+            var el = document.getElementById('orderTable');
+            api('/api/order/listAll').then(function(data) {
+                if (data.code) { el.innerHTML = '<div class="loading">加载失败</div>'; return; }
+                if (!data.length) { el.innerHTML = '<div class="loading">暂无订单</div>'; return; }
+                var html = '<table><tr><th>订单ID</th><th>用户ID</th><th>商品ID</th><th>数量</th><th>总金额</th><th>地址</th><th>状态</th><th>下单时间</th><th>操作</th></tr>';
+                for (var i = 0; i < data.length; i++) {
+                    var o = data[i];
+                    var shipped = o.status === '已发货';
+                    var statusHtml = shipped
+                        ? '<span class="tag tag-success">已发货</span>'
+                        : '<span class="tag tag-warning">待发货</span>';
+                    var shipBtn = shipped ? '' : '<button class="btn btn-ship" onclick="shipOrder(' + o.id + ')">发货</button>';
+                    html += '<tr>' +
+                        '<td>' + o.id + '</td>' +
+                        '<td>' + o.userId + '</td>' +
+                        '<td>' + o.productId + '</td>' +
+                        '<td>' + o.quantity + '</td>' +
+                        '<td>¥' + o.totalPrice + '</td>' +
+                        '<td>' + (o.address || '-') + '</td>' +
+                        '<td>' + statusHtml + '</td>' +
+                        '<td>' + (o.createTime || '-') + '</td>' +
+                        '<td>' + shipBtn + ' <button class="btn btn-chat" onclick="openChat(' + o.userId + ')">私聊</button></td>' +
+                    '</tr>';
+                }
+                html += '</table>';
+                el.innerHTML = html;
+            });
+        }
+
+        function shipOrder(orderId) {
+            var params = new URLSearchParams({ orderId: orderId });
+            fetch('/api/order/ship', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params.toString() })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.code === 0) { loadOrders(); } else { alert(data.message || '发货失败'); }
+            });
+        }
+
+        function openChat(userId) {
+            chatTargetUserId = userId;
+            document.getElementById('chatTitle').textContent = '与用户 ' + userId + ' 对话';
+            document.getElementById('chatModal').classList.add('active');
+            loadConversation();
+            if (chatTimer) clearInterval(chatTimer);
+            chatTimer = setInterval(loadConversation, 3000);
+        }
+
+        function closeChat() {
+            document.getElementById('chatModal').classList.remove('active');
+            if (chatTimer) { clearInterval(chatTimer); chatTimer = null; }
+        }
+
+        function loadConversation() {
+            api('/api/message/conversation?userIdA=0&userIdB=' + chatTargetUserId).then(function(data) {
+                var el = document.getElementById('chatList');
+                if (data.code) return;
+                if (!data.length) { el.innerHTML = '<div class="loading">暂无消息</div>'; return; }
+                el.innerHTML = data.map(function(m) {
+                    var mine = m.fromUserId === 0;
+                    return '<div class="chat-msg ' + (mine ? 'mine' : '') + '">' +
+                        '<div><div class="bubble">' + m.content + '</div>' +
+                        '<div class="time">' + (m.createTime || '') + '</div></div>' +
+                    '</div>';
+                }).join('');
+                el.scrollTop = el.scrollHeight;
+            });
+        }
+
+        function sendMessage() {
+            var content = document.getElementById('chatInput').value.trim();
+            if (!content) return;
+            var params = new URLSearchParams({ fromUserId: 0, toUserId: chatTargetUserId, content: content });
+            fetch('/api/message/send', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params.toString() })
+            .then(function(res) { return res.json(); })
+            .then(function() {
+                document.getElementById('chatInput').value = '';
+                loadConversation();
+            });
+        }
+
+        function openAddProduct() {
+            document.getElementById('editTitle').textContent = '新增商品';
+            document.getElementById('editProductId').value = '';
+            document.getElementById('editName').value = '';
+            document.getElementById('editPrice').value = '';
+            document.getElementById('editStock').value = '';
+            document.getElementById('productModal').classList.add('active');
+        }
+
+        function openEditProduct(id) {
+            var p = null;
+            for (var i = 0; i < productsCache.length; i++) {
+                if (productsCache[i].id === id) { p = productsCache[i]; break; }
+            }
+            if (!p) return;
+            document.getElementById('editTitle').textContent = '编辑商品 #' + p.id;
+            document.getElementById('editProductId').value = p.id;
+            document.getElementById('editName').value = p.name;
+            document.getElementById('editPrice').value = p.price;
+            document.getElementById('editStock').value = p.stock;
+            document.getElementById('productModal').classList.add('active');
+        }
+
+        function closeProductModal() {
+            document.getElementById('productModal').classList.remove('active');
+        }
+
+        function saveProduct() {
+            var id = document.getElementById('editProductId').value;
+            var name = document.getElementById('editName').value.trim();
+            var price = document.getElementById('editPrice').value;
+            var stock = document.getElementById('editStock').value;
+            if (!name) { alert('请输入商品名称'); return; }
+            if (price === '' || isNaN(parseFloat(price)) || parseFloat(price) < 0) { alert('请输入正确的价格'); return; }
+            if (stock === '' || isNaN(parseInt(stock)) || parseInt(stock) < 0) { alert('请输入正确的库存'); return; }
+
+            var params = new URLSearchParams();
+            var url;
+            if (id) {
+                url = '/api/product/update';
+                params.append('productId', id);
+            } else {
+                url = '/api/product/add';
+            }
+            params.append('name', name);
+            params.append('price', price);
+            params.append('stock', stock);
+
+            fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: params.toString() })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.code === 0) {
+                    closeProductModal();
+                    loadProducts();
+                } else {
+                    alert(data.message || '操作失败');
+                }
+            });
+        }
+
+        function logout() {
+            localStorage.removeItem('currentUser');
+            window.location.href = '/login.html';
+        }
+
+        initAdmin();
+        loadProducts();
+        loadOrders();
+    </script>
+</body>
+</html>

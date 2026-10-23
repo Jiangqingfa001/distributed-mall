@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微商订单管理系统</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif; background: #f0f2f5; color: #333; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 20px 40px; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 24px; }
+        .header .status { font-size: 14px; padding: 6px 16px; border-radius: 20px; background: rgba(255,255,255,0.2); }
+        .header .status.online { background: #52c41a; }
+        .container { max-width: 1200px; margin: 24px auto; padding: 0 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 24px; }
+        .card.full { grid-column: 1 / -1; }
+        .card h3 { font-size: 18px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #667eea; color: #333; }
+        .form-row { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; align-items: flex-end; }
+        .form-group { display: flex; flex-direction: column; flex: 1; min-width: 120px; }
+        .form-group label { font-size: 13px; color: #666; margin-bottom: 4px; font-weight: 500; }
+        .form-group input, .form-group select { padding: 10px 12px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px; transition: border-color 0.3s; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 2px rgba(102,126,234,0.15); }
+        .btn { padding: 10px 24px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: 500; transition: all 0.3s; }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; }
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(102,126,234,0.35); }
+        .btn-outline { background: #fff; color: #667eea; border: 1px solid #667eea; }
+        .btn-outline:hover { background: #f0f0ff; }
+        .btn-sm { padding: 5px 12px; font-size: 12px; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        table th { background: #fafafa; padding: 12px; text-align: left; font-weight: 600; border-bottom: 2px solid #e8e8e8; }
+        table td { padding: 12px; border-bottom: 1px solid #f0f0f0; }
+        table tr:hover td { background: #fafafa; }
+        .tag { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 500; }
+        .tag-success { background: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
+        .tag-warning { background: #fffbe6; color: #faad14; border: 1px solid #ffe58f; }
+        .msg { padding: 10px 16px; border-radius: 8px; margin-top: 12px; font-size: 14px; display: none; }
+        .msg.success { background: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; display: block; }
+        .msg.error { background: #fff2f0; color: #ff4d4f; border: 1px solid #ffccc7; display: block; }
+        .loading { text-align: center; padding: 20px; color: #999; }
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+        .product-item { border: 1px solid #e8e8e8; border-radius: 8px; padding: 12px; cursor: pointer; transition: all 0.3s; }
+        .product-item:hover { border-color: #667eea; box-shadow: 0 2px 8px rgba(102,126,234,0.15); }
+        .product-item.selected { border-color: #667eea; background: #f0f0ff; }
+        .product-item .name { font-weight: 600; font-size: 15px; }
+        .product-item .price { color: #ff4d4f; font-size: 18px; font-weight: 700; margin: 6px 0; }
+        .product-item .stock { color: #999; font-size: 12px; }
+        .summary { display: flex; gap: 20px; margin-bottom: 16px; }
+        .summary-item { flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 16px; border-radius: 10px; text-align: center; }
+        .summary-item .num { font-size: 28px; font-weight: 700; }
+        .summary-item .label { font-size: 13px; opacity: 0.9; margin-top: 4px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>微商订单管理系统</h1>
+        <div class="status" id="serverStatus">检查连接中...</div>
+    </div>
+
+    <div class="container">
+        <!-- 统计概览 -->
+        <div class="card full">
+            <h3>数据概览</h3>
+            <div class="summary">
+                <div class="summary-item"><div class="num" id="totalOrders">-</div><div class="label">总订单数</div></div>
+                <div class="summary-item" style="background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%);"><div class="num" id="totalProducts">-</div><div class="label">商品数量</div></div>
+                <div class="summary-item" style="background:linear-gradient(135deg,#4facfe 0%,#00f2fe 100%);"><div class="num" id="totalUsers">-</div><div class="label">用户数量</div></div>
+            </div>
+        </div>
+
+        <!-- 创建订单 -->
+        <div class="card">
+            <h3>创建订单</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>用户ID</label>
+                    <input type="number" id="userId" placeholder="输入用户ID" min="1">
+                </div>
+                <div class="form-group">
+                    <label>商品ID</label>
+                    <input type="number" id="productId" placeholder="输入商品ID" min="1">
+                </div>
+                <div class="form-group">
+                    <label>数量</label>
+                    <input type="number" id="quantity" placeholder="数量" min="1" value="1">
+                </div>
+                <div class="form-group" style="justify-content:flex-end;">
+                    <button class="btn btn-primary" onclick="createOrder()">创建订单</button>
+                </div>
+            </div>
+            <div class="msg" id="createMsg"></div>
+        </div>
+
+        <!-- 查询订单 -->
+        <div class="card">
+            <h3>查询订单</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>按用户ID查询</label>
+                    <input type="number" id="queryUserId" placeholder="输入用户ID" min="1">
+                </div>
+                <div class="form-group" style="justify-content:flex-end;">
+                    <button class="btn btn-primary" onclick="queryOrdersByUser()">查询</button>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>按订单ID查询</label>
+                    <input type="number" id="queryOrderId" placeholder="输入订单ID" min="1">
+                </div>
+                <div class="form-group" style="justify-content:flex-end;">
+                    <button class="btn btn-outline" onclick="queryOrderById()">查询</button>
+                </div>
+            </div>
+            <div class="msg" id="queryMsg"></div>
+        </div>
+
+        <!-- 商品列表 -->
+        <div class="card">
+            <h3>商品列表 <button class="btn btn-sm btn-outline" onclick="loadProducts()" style="margin-left:12px;">刷新</button></h3>
+            <div class="product-grid" id="productList"><div class="loading">加载中...</div></div>
+        </div>
+
+        <!-- 用户列表 -->
+        <div class="card">
+            <h3>用户列表 <button class="btn btn-sm btn-outline" onclick="loadUsers()" style="margin-left:12px;">刷新</button></h3>
+            <div id="userList"><div class="loading">加载中...</div></div>
+        </div>
+
+        <!-- 订单列表 -->
+        <div class="card full">
+            <h3>订单列表 <button class="btn btn-sm btn-outline" onclick="loadAllOrders()" style="margin-left:12px;">刷新全部</button></h3>
+            <div id="orderTable"><div class="loading">请先查询用户订单</div></div>
+        </div>
+    </div>
+
+    <script>
+        const API = 'http://localhost:8090';
+
+        function showMsg(id, text, type) {
+            const el = document.getElementById(id);
+            el.textContent = text;
+            el.className = 'msg ' + type;
+            setTimeout(() => el.className = 'msg', 3000);
+        }
+
+        async function api(path, options) {
+            try {
+                const res = await fetch(API + path, options);
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                return await res.json();
+            } catch (e) {
+                throw new Error('请求失败: ' + e.message);
+            }
+        }
+
+        // 检查服务器
+        async function checkServer() {
+            try {
+                const res = await fetch(API + '/api/product/list');
+                if (res.ok) {
+                    document.getElementById('serverStatus').textContent = '服务在线';
+                    document.getElementById('serverStatus').className = 'status online';
+                }
+            } catch(e) {
+                document.getElementById('serverStatus').textContent = '服务离线';
+                document.getElementById('serverStatus').className = 'status offline';
+            }
+        }
+
+        // 加载商品
+        async function loadProducts() {
+            const el = document.getElementById('productList');
+            try {
+                const data = await api('/api/product/list');
+                document.getElementById('totalProducts').textContent = data.length;
+                el.innerHTML = data.map(p => `
+                    <div class="product-item" onclick="selectProduct(${p.id})" id="prod-${p.id}">
+                        <div class="name">${p.name}</div>
+                        <div class="price">¥${p.price}</div>
+                        <div class="stock">库存: ${p.stock}</div>
+                    </div>
+                `).join('');
+            } catch(e) {
+                el.innerHTML = '<div class="loading" style="color:#ff4d4f;">加载失败: ' + e.message + '</div>';
+            }
+        }
+
+        // 选择商品
+        function selectProduct(id) {
+            document.querySelectorAll('.product-item').forEach(el => el.classList.remove('selected'));
+            const el = document.getElementById('prod-' + id);
+            if (el) el.classList.add('selected');
+            document.getElementById('productId').value = id;
+        }
+
+        // 加载用户
+        async function loadUsers() {
+            const el = document.getElementById('userList');
+            try {
+                const data = await api('/api/user/list');
+                document.getElementById('totalUsers').textContent = data.length;
+                el.innerHTML = '<table><tr><th>ID</th><th>用户名</th><th>邮箱</th></tr>' +
+                    data.map(u => `<tr><td>${u.id}</td><td>${u.username}</td><td>${u.email}</td></tr>`).join('') +
+                    '</table>';
+            } catch(e) {
+                el.innerHTML = '<div class="loading" style="color:#ff4d4f;">加载失败: ' + e.message + '</div>';
+            }
+        }
+
+        // 创建订单
+        async function createOrder() {
+            const userId = document.getElementById('userId').value;
+            const productId = document.getElementById('productId').value;
+            const quantity = document.getElementById('quantity').value;
+
+            if (!userId || !productId || !quantity) {
+                showMsg('createMsg', '请填写完整信息', 'error');
+                return;
+            }
+
+            try {
+                const data = await api(`/api/order/create?userId=${userId}&productId=${productId}&quantity=${quantity}`, { method: 'POST' });
+                showMsg('createMsg', '订单创建成功! 订单ID: ' + data.id + ', 金额: ¥' + data.totalPrice, 'success');
+                document.getElementById('queryUserId').value = userId;
+                queryOrdersByUser();
+            } catch(e) {
+                showMsg('createMsg', e.message, 'error');
+            }
+        }
+
+        // 按用户查询订单
+        async function queryOrdersByUser() {
+            const userId = document.getElementById('queryUserId').value;
+            if (!userId) { showMsg('queryMsg', '请输入用户ID', 'error'); return; }
+            try {
+                const data = await api('/api/order/user/' + userId);
+                document.getElementById('totalOrders').textContent = data.length;
+                renderOrderTable(data);
+                showMsg('queryMsg', '查询到 ' + data.length + ' 条订单', 'success');
+            } catch(e) {
+                showMsg('queryMsg', e.message, 'error');
+            }
+        }
+
+        // 按ID查询订单
+        async function queryOrderById() {
+            const orderId = document.getElementById('queryOrderId').value;
+            if (!orderId) { showMsg('queryMsg', '请输入订单ID', 'error'); return; }
+            try {
+                const data = await api('/api/order/' + orderId);
+                document.getElementById('totalOrders').textContent = '1';
+                renderOrderTable([data]);
+                showMsg('queryMsg', '查询成功', 'success');
+            } catch(e) {
+                showMsg('queryMsg', e.message, 'error');
+            }
+        }
+
+        // 加载全部订单（遍历所有用户）
+        async function loadAllOrders() {
+            try {
+                const users = await api('/api/user/list');
+                let allOrders = [];
+                for (const u of users) {
+                    try {
+                        const orders = await api('/api/order/user/' + u.id);
+                        allOrders = allOrders.concat(orders);
+                    } catch(e) {}
+                }
+                document.getElementById('totalOrders').textContent = allOrders.length;
+                renderOrderTable(allOrders);
+            } catch(e) {
+                document.getElementById('orderTable').innerHTML = '<div class="loading" style="color:#ff4d4f;">加载失败</div>';
+            }
+        }
+
+        // 渲染订单表格
+        function renderOrderTable(orders) {
+            const el = document.getElementById('orderTable');
+            if (!orders || orders.length === 0) {
+                el.innerHTML = '<div class="loading">暂无订单数据</div>';
+                return;
+            }
+            el.innerHTML = `
+                <table>
+                    <tr><th>订单ID</th><th>用户ID</th><th>商品ID</th><th>数量</th><th>总金额</th><th>状态</th><th>创建时间</th></tr>
+                    ${orders.map(o => `
+                        <tr>
+                            <td>${o.id}</td>
+                            <td>${o.userId}</td>
+                            <td>${o.productId}</td>
+                            <td>${o.quantity}</td>
+                            <td style="color:#ff4d4f;font-weight:600;">¥${o.totalPrice}</td>
+                            <td><span class="tag ${o.status === 'PAID' ? 'tag-success' : 'tag-warning'}">${o.status || '待支付'}</span></td>
+                            <td>${o.createTime || '-'}</td>
+                        </tr>
+                    `).join('')}
+                </table>
+            `;
+        }
+
+        // 初始化
+        checkServer();
+        loadProducts();
+        loadUsers();
+    </script>
+</body>
+</html>

@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 微商订单管理系统</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh; display: flex; align-items: center; justify-content: center;
+        }
+        .login-box {
+            width: 400px; max-width: 92vw;
+            background: #fff; border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 40px 32px;
+        }
+        .login-box h1 { font-size: 22px; color: #333; text-align: center; margin-bottom: 4px; }
+        .login-box .sub { font-size: 13px; color: #999; text-align: center; margin-bottom: 24px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 13px; color: #666; margin-bottom: 6px; font-weight: 500; }
+        .form-group input {
+            width: 100%; padding: 11px 12px; border: 1px solid #d9d9d9; border-radius: 8px;
+            font-size: 14px; transition: border-color 0.3s;
+        }
+        .form-group input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 2px rgba(102,126,234,0.15); }
+        .btn {
+            width: 100%; padding: 12px; border: none; border-radius: 8px; font-size: 15px;
+            cursor: pointer; font-weight: 500; transition: all 0.3s;
+        }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; }
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-outline { background: #fff; color: #667eea; border: 1px solid #667eea; margin-top: 8px; }
+        .btn-outline:hover { background: #f0f0ff; }
+        .links { display: flex; justify-content: space-between; margin-top: 14px; font-size: 13px; }
+        .links a { color: #667eea; cursor: pointer; text-decoration: none; }
+        .links a:hover { text-decoration: underline; }
+        .msg { padding: 10px 14px; border-radius: 8px; margin-top: 12px; font-size: 14px; display: none; }
+        .msg.success { background: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; display: block; }
+        .msg.error { background: #fff2f0; color: #ff4d4f; border: 1px solid #ffccc7; display: block; }
+        .view { display: none; }
+        .view.active { display: block; }
+        .security-q {
+            background: #f6f7fb; border: 1px dashed #b7b7e8; border-radius: 8px;
+            padding: 12px; margin-bottom: 16px; font-size: 14px; color: #555;
+        }
+        .security-q b { color: #667eea; }
+        .step-tip { font-size: 13px; color: #999; margin-bottom: 14px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <h1>微商订单管理系统</h1>
+        <div class="sub">账号登录</div>
+
+        <!-- 登录 -->
+        <div class="view active" id="view-login">
+            <div class="form-group">
+                <label>手机号</label>
+                <input type="tel" id="loginPhone" placeholder="请输入注册手机号" maxlength="11">
+            </div>
+            <div class="form-group">
+                <label>密码</label>
+                <input type="password" id="loginPassword" placeholder="请输入密码">
+            </div>
+            <button class="btn btn-primary" onclick="doLogin()">登 录</button>
+            <div class="links">
+                <a onclick="showView('register')">注册账号</a>
+                <a onclick="showView('forgot')">忘记密码？</a>
+                <a onclick="showView('admin')">管理员登录</a>
+            </div>
+            <div class="msg" id="loginMsg"></div>
+        </div>
+
+        <!-- 注册 -->
+        <div class="view" id="view-register">
+            <div class="form-group">
+                <label>手机号</label>
+                <input type="tel" id="regPhone" placeholder="请输入手机号" maxlength="11">
+            </div>
+            <div class="form-group">
+                <label>设置密码</label>
+                <input type="password" id="regPassword" placeholder="请输入密码">
+            </div>
+            <div class="form-group">
+                <label>确认密码</label>
+                <input type="password" id="regPassword2" placeholder="请再次输入密码">
+            </div>
+            <div class="form-group">
+                <label>密保问题</label>
+                <input type="text" id="regQuestion" placeholder="例如：我的小学名称是？">
+            </div>
+            <div class="form-group">
+                <label>密保答案</label>
+                <input type="text" id="regAnswer" placeholder="请输入密保答案">
+            </div>
+            <button class="btn btn-primary" onclick="doRegister()">注 册</button>
+            <div class="links">
+                <a onclick="showView('login')">已有账号？去登录</a>
+            </div>
+            <div class="msg" id="regMsg"></div>
+        </div>
+
+        <!-- 忘记密码 -->
+        <div class="view" id="view-forgot">
+            <div class="step-tip" id="forgotTip">步骤 1 / 3：输入手机号</div>
+
+            <div id="forgotStep1">
+                <div class="form-group">
+                    <label>手机号</label>
+                    <input type="tel" id="forgotPhone" placeholder="请输入注册手机号" maxlength="11">
+                </div>
+                <button class="btn btn-primary" onclick="forgotStep1()">下一步</button>
+            </div>
+
+            <div id="forgotStep2" style="display:none;">
+                <div class="security-q">密保问题：<b id="showQuestion"></b></div>
+                <div class="form-group">
+                    <label>密保答案</label>
+                    <input type="text" id="forgotAnswer" placeholder="请输入密保答案">
+                </div>
+                <button class="btn btn-primary" onclick="forgotStep2()">验证</button>
+            </div>
+
+            <div id="forgotStep3" style="display:none;">
+                <div class="form-group">
+                    <label>新密码</label>
+                    <input type="password" id="newPassword" placeholder="请输入新密码">
+                </div>
+                <div class="form-group">
+                    <label>确认新密码</label>
+                    <input type="password" id="newPassword2" placeholder="请再次输入新密码">
+                </div>
+                <button class="btn btn-primary" onclick="forgotStep3()">重置密码</button>
+            </div>
+
+            <div class="links">
+                <a onclick="showView('login')">返回登录</a>
+            </div>
+            <div class="msg" id="forgotMsg"></div>
+        </div>
+
+        <!-- 管理员登录 -->
+        <div class="view" id="view-admin">
+            <div class="form-group">
+                <label>管理员账号</label>
+                <input type="text" id="adminUsername" placeholder="请输入管理员账号">
+            </div>
+            <div class="form-group">
+                <label>密码</label>
+                <input type="password" id="adminPassword" placeholder="请输入密码">
+            </div>
+            <button class="btn btn-primary" onclick="doAdminLogin()">管理员登录</button>
+            <div class="links">
+                <a onclick="showView('login')">返回用户登录</a>
+            </div>
+            <div class="msg" id="adminMsg"></div>
+        </div>
+    </div>
+
+    <script>
+        function showView(name) {
+            var views = document.querySelectorAll('.view');
+            for (var i = 0; i < views.length; i++) { views[i].classList.remove('active'); }
+            document.getElementById('view-' + name).classList.add('active');
+            if (name === 'forgot') {
+                resetForgot();
+            }
+            hideMsg();
+        }
+
+        function resetForgot() {
+            forgotPhone = '';
+            document.getElementById('forgotPhone').value = '';
+            document.getElementById('forgotAnswer').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('newPassword2').value = '';
+            document.getElementById('forgotTip').textContent = '步骤 1 / 3：输入手机号';
+            document.getElementById('forgotStep1').style.display = 'block';
+            document.getElementById('forgotStep2').style.display = 'none';
+            document.getElementById('forgotStep3').style.display = 'none';
+        }
+
+        function showMsg(id, text, type) {
+            var el = document.getElementById(id);
+            el.textContent = text;
+            el.className = 'msg ' + type;
+        }
+
+        function hideMsg() {
+            var msgs = document.querySelectorAll('.msg');
+            for (var i = 0; i < msgs.length; i++) { msgs[i].className = 'msg'; }
+        }
+
+        function validPhone(phone) {
+            return /^1\d{10}$/.test(phone);
+        }
+
+        function api(path, options) {
+            return fetch(path, options).then(function(res) {
+                return res.json();
+            }).then(function(data) {
+                return data;
+            }).catch(function(e) {
+                return { code: 1, message: '请求失败: ' + e.message };
+            });
+        }
+
+        function post(path, params) {
+            return api(path, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams(params)
+            });
+        }
+
+        function doLogin() {
+            var phone = document.getElementById('loginPhone').value.trim();
+            var password = document.getElementById('loginPassword').value;
+            if (!validPhone(phone)) { showMsg('loginMsg', '请输入正确的手机号', 'error'); return; }
+            if (!password) { showMsg('loginMsg', '请输入密码', 'error'); return; }
+
+            post('/api/auth/login', { phone: phone, password: password }).then(function(data) {
+                if (data.code === 0) {
+                    localStorage.setItem('currentUser', JSON.stringify(data.data));
+                    showMsg('loginMsg', '登录成功，正在进入系统...', 'success');
+                    setTimeout(function() { window.location.href = '/'; }, 800);
+                } else {
+                    showMsg('loginMsg', data.message, 'error');
+                }
+            });
+        }
+
+        function doAdminLogin() {
+            var username = document.getElementById('adminUsername').value.trim();
+            var password = document.getElementById('adminPassword').value;
+            if (!username) { showMsg('adminMsg', '请输入管理员账号', 'error'); return; }
+            if (!password) { showMsg('adminMsg', '请输入密码', 'error'); return; }
+
+            post('/api/auth/admin-login', { username: username, password: password }).then(function(data) {
+                if (data.code === 0) {
+                    localStorage.setItem('currentUser', JSON.stringify(data.data));
+                    showMsg('adminMsg', '登录成功，正在进入管理后台...', 'success');
+                    setTimeout(function() { window.location.href = '/admin.html'; }, 800);
+                } else {
+                    showMsg('adminMsg', data.message, 'error');
+                }
+            });
+        }
+
+        function doRegister() {
+            var phone = document.getElementById('regPhone').value.trim();
+            var password = document.getElementById('regPassword').value;
+            var password2 = document.getElementById('regPassword2').value;
+            var question = document.getElementById('regQuestion').value.trim();
+            var answer = document.getElementById('regAnswer').value.trim();
+
+            if (!validPhone(phone)) { showMsg('regMsg', '请输入正确的手机号', 'error'); return; }
+            if (password.length < 6) { showMsg('regMsg', '密码至少 6 位', 'error'); return; }
+            if (password !== password2) { showMsg('regMsg', '两次输入的密码不一致', 'error'); return; }
+            if (!question) { showMsg('regMsg', '请设置密保问题', 'error'); return; }
+            if (!answer) { showMsg('regMsg', '请设置密保答案', 'error'); return; }
+
+            post('/api/auth/register', {
+                phone: phone, password: password,
+                securityQuestion: question, securityAnswer: answer
+            }).then(function(data) {
+                if (data.code === 0) {
+                    showMsg('regMsg', '注册成功，请登录', 'success');
+                    document.getElementById('loginPhone').value = phone;
+                    setTimeout(function() { showView('login'); }, 1000);
+                } else {
+                    showMsg('regMsg', data.message, 'error');
+                }
+            });
+        }
+
+        var forgotPhone = '';
+
+        function forgotStep1() {
+            forgotPhone = document.getElementById('forgotPhone').value.trim();
+            if (!validPhone(forgotPhone)) { showMsg('forgotMsg', '请输入正确的手机号', 'error'); return; }
+
+            api('/api/auth/security-question?phone=' + encodeURIComponent(forgotPhone)).then(function(data) {
+                if (data.code === 0) {
+                    document.getElementById('showQuestion').textContent = data.data.securityQuestion || '（未设置密保问题）';
+                    document.getElementById('forgotTip').textContent = '步骤 2 / 3：输入密保答案';
+                    document.getElementById('forgotStep1').style.display = 'none';
+                    document.getElementById('forgotStep2').style.display = 'block';
+                } else {
+                    showMsg('forgotMsg', data.message, 'error');
+                }
+            });
+        }
+
+        function forgotStep2() {
+            var answer = document.getElementById('forgotAnswer').value.trim();
+            if (!answer) { showMsg('forgotMsg', '请输入密保答案', 'error'); return; }
+
+            post('/api/auth/verify-security', { phone: forgotPhone, securityAnswer: answer }).then(function(data) {
+                if (data.code === 0) {
+                    document.getElementById('forgotTip').textContent = '步骤 3 / 3：设置新密码';
+                    document.getElementById('forgotStep2').style.display = 'none';
+                    document.getElementById('forgotStep3').style.display = 'block';
+                } else {
+                    showMsg('forgotMsg', data.message, 'error');
+                }
+            });
+        }
+
+        function forgotStep3() {
+            var p1 = document.getElementById('newPassword').value;
+            var p2 = document.getElementById('newPassword2').value;
+            if (p1.length < 6) { showMsg('forgotMsg', '新密码至少 6 位', 'error'); return; }
+            if (p1 !== p2) { showMsg('forgotMsg', '两次输入的密码不一致', 'error'); return; }
+
+            post('/api/auth/reset-password', { phone: forgotPhone, newPassword: p1 }).then(function(data) {
+                if (data.code === 0) {
+                    showMsg('forgotMsg', '密码重置成功，请使用新密码登录', 'success');
+                    document.getElementById('loginPhone').value = forgotPhone;
+                    setTimeout(function() { showView('login'); }, 1200);
+                } else {
+                    showMsg('forgotMsg', data.message, 'error');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

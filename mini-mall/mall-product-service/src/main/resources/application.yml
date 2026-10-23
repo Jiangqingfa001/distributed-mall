@@ -1,0 +1,19 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: mall-product-service
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/mini_mall?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
+    username: root
+    password: "${DB_PASSWORD:123456}"
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+mini:
+  rpc:
+    zk-address: 127.0.0.1:2181
+    server-host: 127.0.0.1
+    server-port: 9092
+    serialize-type: json
+    load-balance: random

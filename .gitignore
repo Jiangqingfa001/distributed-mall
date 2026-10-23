@@ -1,0 +1,27 @@
+# Zookeeper 二进制与压缩包
+apache-zookeeper-3.9.3-bin/
+*.tar.gz
+
+# 日志
+logs/
+**/logs/
+*.log
+
+# Maven 构建产物
+target/
+**/target/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# Claude 本地配置
+.claude/
+
+# 系统文件
+.DS_Store
+Thumbs.db

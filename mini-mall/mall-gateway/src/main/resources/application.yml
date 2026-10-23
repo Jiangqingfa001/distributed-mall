@@ -1,0 +1,17 @@
+server:
+  port: 8090
+
+spring:
+  application:
+    name: mall-gateway
+  jackson:
+    time-zone: GMT+8
+    date-format: yyyy-MM-dd HH:mm:ss
+
+mini:
+  rpc:
+    zk-address: 127.0.0.1:2181
+    server-host: 127.0.0.1
+    server-port: 9090
+    serialize-type: json
+    load-balance: random
